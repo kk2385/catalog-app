@@ -11,7 +11,7 @@
 	</div>
 	<div class="row">
 		<div class="col-md-6 col-md-offset-1 padding-top">
-			<form action="{{ url_for('editCategory',category_id = category.id)}}" method = "post">
+			<form action="{{ url_for('editCategory',category_id = category.id) }}" method = "post">
 				<div class="form-group">
 					<label for="name">Name:</label>
 					<input type ="text" class="form-control" name="name" value="{{category.name }}">
@@ -20,7 +20,7 @@
 					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Save</button>
 				</div>
 			</form>
-			<a href = "{{ url_for('showCategory',category_id=category.id)}}">
+			<a href = "{{ url_for('showCategory',category_id=category.id) }}">
 				<button class="btn btn-default delete">
 				<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel</button>
 			</a>
