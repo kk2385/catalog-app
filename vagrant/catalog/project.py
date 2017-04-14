@@ -44,6 +44,11 @@ def login_required(f):
 # Create anti-forgery state token
 @app.route('/login')
 def showLogin():
+    """Display login page
+
+    Returns:
+        on GET: Renders the login webpage.
+    """
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
     login_session['state'] = state
@@ -53,6 +58,12 @@ def showLogin():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Attempt to connect to Google
+
+    Returns:
+        A response for whether the access token is granted, and saves relevant
+        user info to login_session
+    """
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -169,6 +180,11 @@ def getUserID(email):
 # DISCONNECT - Revoke a current user's token and reset their login_session
 @app.route('/gdisconnect')
 def gdisconnect():
+    """Disconnect from Google by revoking the access token
+
+    Returns:
+        A response of whether the token is successfully revoked.
+    """
     # Only disconnect a connected user.
     access_token = login_session.get('access_token')
     if access_token is None:
@@ -190,6 +206,11 @@ def gdisconnect():
 # JSON APIs to view category info
 @app.route('/category/<int:category_id>/item/JSON')
 def categoryJSON(category_id):
+    """Return list of category items in JSON
+
+    Returns:
+        on GET: JSON response of the list of category items.
+    """
     category = session.query(Category).filter_by(id=category_id).one()
     items = session.query(CatalogItem).filter_by(category_id=category_id).all()
     return jsonify(CatalogItems=[i.serialize for i in items])
@@ -197,12 +218,22 @@ def categoryJSON(category_id):
 
 @app.route('/category/<int:category_id>/item/<int:item_id>/JSON')
 def catalogItemJSON(category_id, item_id):
+    """Return specific category item in JSON
+
+    Returns:
+        on GET: JSON response of the list of the specific category item.
+    """
     Catalog_Item = session.query(CatalogItem).filter_by(id=item_id).one()
     return jsonify(Catalog_Item=Catalog_Item.serialize)
 
 
 @app.route('/category/JSON')
 def categoriesJSON():
+    """Return list of categories in JSON
+
+    Returns:
+        on GET: JSON response of the list of categories.
+    """
     categories = session.query(Category).all()
     return jsonify(categories=[r.serialize for r in categories])
 
@@ -222,6 +253,13 @@ def showCategories():
 @app.route('/category/new/', methods=['GET', 'POST'])
 @login_required
 def newCategory():
+    """Create new Category in the database
+
+    Returns:
+        on GET: Page to create a new category.
+        on POST: Redirect to main page after category has been created.
+        Authentication: Redirect to login page when user is not signed in.
+    """
     if request.method == 'POST':
         newCategory = Category(name=request.form['name'],
                                user_id=login_session['user_id'])
@@ -237,6 +275,14 @@ def newCategory():
 @app.route('/category/<int:category_id>/edit/', methods=['GET', 'POST'])
 @login_required
 def editCategory(category_id):
+    """Edit a Category in the database
+
+    Returns:
+        on GET: Page to edit the specified category.
+        on POST: Redirect to categories page after category has been created.
+        Authentication: Redirect to login page when user is not signed in.
+        Authoriziation: Only the created user can do this.
+    """
     editedCategory = session.query(Category).filter_by(id=category_id).one()
     if editedCategory.user_id != login_session['user_id']:
         flash('You are not allowed to edit categories that are not yours!')
@@ -254,6 +300,14 @@ def editCategory(category_id):
 @app.route('/category/<int:category_id>/delete/', methods=['GET', 'POST'])
 @login_required
 def deleteCategory(category_id):
+    """Delete a Category in the database
+
+    Returns:
+        on GET: Confirmation page to delete the specified category.
+        on POST: Redirect to categories page after category has been deleted.
+        Authentication: Redirect to login page when user is not signed in.
+        Authoriziation: Only the created user can do this.
+    """
     categoryToDelete = session.query(Category).filter_by(id=category_id).one()
     if categoryToDelete.user_id != login_session['user_id']:
         flash('You are not allowed to delete categories that are not yours!')
@@ -272,6 +326,11 @@ def deleteCategory(category_id):
 @app.route('/category/<int:category_id>/')
 @app.route('/category/<int:category_id>/item/')
 def showCategory(category_id):
+    """Display a category and its items in a list
+
+    Returns:
+        on GET: renders category page to with the specified category.
+    """
     category = session.query(Category).filter_by(id=category_id).one()
     creator = getUserInfo(category.user_id)
     items = session.query(CatalogItem).filter_by(category_id=category_id).all()
@@ -292,6 +351,13 @@ def showCategory(category_id):
 @app.route('/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
 @login_required
 def newCatalogItem(category_id):
+    """Create a CatalogItem in the database
+
+    Returns:
+        on GET:  Page to create the specified catalog item.
+        on POST: Redirect to category page after item has been created.
+        Authentication: Redirect to login page when user is not signed in.
+    """
     category = session.query(Category).filter_by(id=category_id).one()
     if request.method == 'POST':
         newItem = CatalogItem(name=request.form['name'],
@@ -311,6 +377,14 @@ def newCatalogItem(category_id):
            methods=['GET', 'POST'])
 @login_required
 def editCatalogItem(category_id, item_id):
+    """Edit a CatalogItem in the database
+
+    Returns:
+        on GET:  Page to edit the specified catalog item.
+        on POST: Redirect to category page after item has been edited.
+        Authentication: Redirect to login page when user is not signed in.
+        Authoriziation: Only the created user can do this.
+    """
     editedItem = session.query(CatalogItem).filter_by(id=item_id).one()
     category = session.query(Category).filter_by(id=category_id).one()
     if editedItem.user_id != login_session['user_id']:
@@ -337,6 +411,14 @@ def editCatalogItem(category_id, item_id):
            methods=['GET', 'POST'])
 @login_required
 def deleteCatalogItem(category_id, item_id):
+    """Delete a CatalogItem in the database
+
+    Returns:
+        on GET:  Confirmation page to delete the specified catalog item.
+        on POST: Redirect to category page after item has been deleted.
+        Authentication: Redirect to login page when user is not signed in.
+        Authoriziation: Only the created user can do this.
+    """
     category = session.query(Category).filter_by(id=category_id).one()
     itemToDelete = session.query(CatalogItem).filter_by(id=item_id).one()
     if itemToDelete.user_id != login_session['user_id']:
@@ -353,6 +435,12 @@ def deleteCatalogItem(category_id, item_id):
 
 @app.route('/disconnect')
 def disconnect():
+    """Log out of the current user
+
+    Returns:
+        on GET: redirects to the home page with the user's info deleted from
+        the current session.
+    """
     if 'username' in login_session:
         gdisconnect()
         del login_session['gplus_id']
