@@ -5,10 +5,9 @@ The Vagrant config is from [this repository supplied by Udacity](https://github.
 
 I ran this project with Vagrant 1.9.2.
 
-##Run this project
+## Run this project
 
-###Clone this project and start the vm:
-
+Clone this project and start the vm:
 ```
 cd vagrant
 vagrant up
