@@ -3,7 +3,7 @@ import sys
 import datetime
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy import create_engine
 
 Base = declarative_base()
@@ -42,7 +42,7 @@ class CatalogItem(Base):
     id = Column(Integer, primary_key = True)
     description = Column(String(250))
     category_id = Column(Integer,ForeignKey('category.id'))
-    category = relationship(Category)
+    category = relationship(Category, backref=backref('catalog_item', cascade='all, delete'))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.current_timestamp())
     user_id = Column(Integer, ForeignKey('user.id'))
