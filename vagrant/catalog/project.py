@@ -16,6 +16,7 @@ from flask import session as login_session
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 from flask import make_response
+from functools import wraps
 
 
 CLIENT_ID = json.loads(
@@ -31,11 +32,20 @@ session = DBSession()
 app = Flask(__name__)
 
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in login_session:
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 # Create anti-forgery state token
 @app.route('/login')
 def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in xrange(32))
+                    for x in range(32))
     login_session['state'] = state
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
@@ -67,7 +77,7 @@ def gconnect():
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
            % access_token)
     h = httplib2.Http()
-    result = json.loads(h.request(url, 'GET')[1])
+    result = json.loads(h.request(url, 'GET')[1].decode("utf8"))
     # If there was an error in the access token info, abort.
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
@@ -210,9 +220,8 @@ def showCategories():
 
 # Create a new category
 @app.route('/category/new/', methods=['GET', 'POST'])
+@login_required
 def newCategory():
-    if 'username' not in login_session:
-        return redirect('/login')
     if request.method == 'POST':
         newCategory = Category(name=request.form['name'],
                                user_id=login_session['user_id'])
@@ -226,10 +235,12 @@ def newCategory():
 
 # Edit a category
 @app.route('/category/<int:category_id>/edit/', methods=['GET', 'POST'])
+@login_required
 def editCategory(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     editedCategory = session.query(Category).filter_by(id=category_id).one()
+    if editedCategory.user_id != login_session['user_id']:
+        flash('You are not allowed to edit categories that are not yours!')
+        return redirect(url_for('showCategories', category_id=category_id))
     if request.method == 'POST':
         if request.form['name']:
             editedCategory.name = request.form['name']
@@ -241,9 +252,8 @@ def editCategory(category_id):
 
 # Delete a category
 @app.route('/category/<int:category_id>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteCategory(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     categoryToDelete = session.query(Category).filter_by(id=category_id).one()
     if categoryToDelete.user_id != login_session['user_id']:
         flash('You are not allowed to delete categories that are not yours!')
@@ -280,9 +290,8 @@ def showCategory(category_id):
 
 # Create a new catalog item
 @app.route('/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
+@login_required
 def newCatalogItem(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
     if request.method == 'POST':
         newItem = CatalogItem(name=request.form['name'],
@@ -300,11 +309,13 @@ def newCatalogItem(category_id):
 # Edit a catalog item
 @app.route('/category/<int:category_id>/item/<int:item_id>/edit',
            methods=['GET', 'POST'])
+@login_required
 def editCatalogItem(category_id, item_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     editedItem = session.query(CatalogItem).filter_by(id=item_id).one()
     category = session.query(Category).filter_by(id=category_id).one()
+    if editedItem.user_id != login_session['user_id']:
+        flash('You are not allowed to edit items that are not yours!')
+        return redirect(url_for('showCategory', category_id=category_id))
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -324,9 +335,8 @@ def editCatalogItem(category_id, item_id):
 # Delete a catalog item
 @app.route('/category/<int:category_id>/item/<int:item_id>/delete',
            methods=['GET', 'POST'])
+@login_required
 def deleteCatalogItem(category_id, item_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
     itemToDelete = session.query(CatalogItem).filter_by(id=item_id).one()
     if itemToDelete.user_id != login_session['user_id']:
